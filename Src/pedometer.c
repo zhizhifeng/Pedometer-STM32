@@ -66,7 +66,7 @@ void pedometer_update(AccVector acc, Acc *data, FilterAccBuffer *coord_data, flo
     // Low pass filter the dot product  
     filter_buffer_update(&coord_data->hp_dot_data, 
                         single_step_filter(coord_data->lp_dot_data.unfiltered, coord_data->lp_dot_data.filtered, LP_USER_COEF, FILTER_BUFFER_SIZE));  
-    processed_data[1]=single_step_filter(coord_data->lp_dot_data.unfiltered, coord_data->lp_dot_data.filtered, LP_USER_COEF, FILTER_BUFFER_SIZE);
+    processed_data[0]=single_step_filter(coord_data->lp_dot_data.unfiltered, coord_data->lp_dot_data.filtered, LP_USER_COEF, FILTER_BUFFER_SIZE);
     // High pass filter the dot product
     //processed_data[0] = single_step_filter(coord_data->hp_dot_data.unfiltered, coord_data->hp_dot_data.filtered, HP_USER_COEF, FILTER_BUFFER_SIZE);
     // Detect step
@@ -103,6 +103,15 @@ float single_step_filter(float* data, float* filtered_data, FilterCoefficients c
     return filtered_data[i];
 }
 
+void measure_steps(int *steps, float *data) {
+    int count_steps = 1;
+        if (data[1] >= THRESHOLD && data[0] < THRESHOLD) {
+            if (count_steps) {
+                *steps += 1;
+                count_steps = 0;
+            }
+        }
+}
 // float filter(float* data, FilterCoefficients coefficients, uint8_t data_length) {
 //     float filtered_data[data_length];
 //     filtered_data[0] = 0;

@@ -42,7 +42,6 @@
 #include <math.h>   /* trunc */
 #include "main.h"
 #include "pedometer.h"
-
 /** @addtogroup X_NUCLEO_IKS01A1_Examples
   * @{
   */
@@ -98,7 +97,7 @@ AccVector acc;
 Acc data;
 FilterAccBuffer coord_data;
 float processed_data[BUFFER_SIZE];
-float threhold =0.15;
+int steps=0;
 
 /* Private function prototypes -----------------------------------------------*/
 
@@ -269,7 +268,6 @@ static void RTC_Handler( void )
 }
 
 
-
 /**
  * @brief  Handles the accelerometer axes data getting/sending
  * @param  handle the device handle
@@ -288,10 +286,12 @@ static void Accelero_Sensor_Handler( void *handle )
 
   // For pedometer
   AccVector data_in;
-
+  
+  
   BSP_ACCELERO_Get_Instance( handle, &id );
 
   BSP_ACCELERO_IsInitialized( handle, &status );
+
 
   if ( status == 1 )
   {
@@ -306,9 +306,9 @@ static void Accelero_Sensor_Handler( void *handle )
     data_in.AccX = (float)acceleration.AXIS_X / 1000.0f;
     data_in.AccY = (float)acceleration.AXIS_Y / 1000.0f;
     data_in.AccZ = (float)acceleration.AXIS_Z / 1000.0f;
+    processed_data[1] = processed_data[0];   
     pedometer_update(data_in, &data, &coord_data, processed_data);
-  if(processed_data[1]<threhold&&processed_data[1]>-threhold)
-  processed_data[1]=0;
+    measure_steps(&steps,processed_data);
     // snprintf( dataOut, MAX_BUF_SIZE, "%d\t%5f\t%5f\t%5f\t",(int)1, data_in.AccX,
     //          data_in.AccY, data_in.AccZ );
 
@@ -319,7 +319,7 @@ static void Accelero_Sensor_Handler( void *handle )
 
     // HAL_UART_Transmit( &UartHandle, ( uint8_t * )dataOut, strlen( dataOut ), 5000 );
 		
-    snprintf( dataOut, MAX_BUF_SIZE, "%d\t%5f\t%5f\t%5f\r\n", 4, coord_data.lp_dot_data.unfiltered[0], coord_data.lp_dot_data.filtered[0],processed_data[1] );
+    snprintf( dataOut, MAX_BUF_SIZE, "%d\t%5f\t%5f\t%5f\t%5f\t%d\r\n", 4, coord_data.lp_dot_data.unfiltered[0], coord_data.lp_dot_data.filtered[0],processed_data[0],processed_data[1],steps );
 
     HAL_UART_Transmit( &UartHandle, ( uint8_t * )dataOut, strlen( dataOut ), 5000 );
 		// snprintf( dataOut, MAX_BUF_SIZE, "%d\t%5f\t%5f\t%5f\r\n", 5, data.user_data.AccX,
