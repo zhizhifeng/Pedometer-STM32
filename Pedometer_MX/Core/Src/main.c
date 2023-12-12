@@ -56,6 +56,7 @@ TIM_HandleTypeDef htim2;
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
+int RTC_SYNCH_PREDIV;
 static volatile uint8_t acquire_data_enable_request  = 1;
 static volatile uint8_t acquire_data_disable_request = 0;
 
@@ -454,22 +455,25 @@ static void floatToInt(float in, displayFloatToInt_t *out_value, int32_t dec_pre
  * @param  None
  * @retval None
  */
-// static void RTC_Handler( void )
-// {
+static void RTC_Handler( void )
+{
 
-//   uint8_t subSec = 0;
-//   RTC_DateTypeDef sdatestructureget;
-//   RTC_TimeTypeDef stimestructure;
+  uint8_t subSec = 0;
+  RTC_DateTypeDef sdatestructureget;
+  RTC_TimeTypeDef stimestructure;
 
-//   HAL_RTC_GetTime( &hrtc, &stimestructure, FORMAT_BIN );
-//   HAL_RTC_GetDate( &hrtc, &sdatestructureget, FORMAT_BIN );
-//   subSec = (((((( int )RTC_SYNCH_PREDIV) - (( int )stimestructure.SubSeconds)) * 100) /
-//              ( RTC_SYNCH_PREDIV + 1 )) & 0xff );
+  HAL_RTC_GetTime( &hrtc, &stimestructure, FORMAT_BIN );
+  HAL_RTC_GetDate( &hrtc, &sdatestructureget, FORMAT_BIN );
+  subSec = (((((( int )RTC_SYNCH_PREDIV) - (( int )stimestructure.SubSeconds)) * 100) /
+             ( RTC_SYNCH_PREDIV + 1 )) & 0xff );
 
-//   snprintf( dataOut, MAX_BUF_SIZE, "\r\n\r\n\r\nTimeStamp: %02d:%02d:%02d.%02d\r\n", stimestructure.Hours, stimestructure.Minutes,
-//            stimestructure.Seconds, subSec );
-//   HAL_UART_Transmit( &huart2, ( uint8_t *)dataOut, strlen( dataOut ), 5000 );
-// }
+  snprintf( dataOut, MAX_BUF_SIZE, "%02d:%02d:%02d.%02d", stimestructure.Hours, stimestructure.Minutes,
+           stimestructure.Seconds, subSec );
+  // snprintf( dataOut, MAX_BUF_SIZE, "\r\n\r\n\r\nTimeStamp: %02d:%02d:%02d.%02d\r\n", stimestructure.Hours, stimestructure.Minutes,
+  //          stimestructure.Seconds, subSec );
+
+  HAL_UART_Transmit( &huart2, ( uint8_t *)dataOut, strlen( dataOut ), 5000 );
+}
 
 /**
  * @brief  Handles the accelerometer axes data getting/sending
@@ -511,7 +515,7 @@ static void Accelero_Sensor_Handler( void *handle )
     pedometer_update(data_in, &data, &coord_data, processed_data);
     measure_steps(&steps,processed_data);
 
-    snprintf( dataOut, MAX_BUF_SIZE, "%d\t%5f\t%5f\t%5f\t%5f\t%d\r\n", 4, coord_data.lp_dot_data.unfiltered[0], coord_data.lp_dot_data.filtered[0],processed_data[0],processed_data[1],steps );
+    snprintf( dataOut, MAX_BUF_SIZE, " %f %f %f %f %f %f %f\r\n", data.acc_data.AccX, data.acc_data.AccY, data.acc_data.AccZ, data.grav_data.AccX, data.grav_data.AccY, data.grav_data.AccZ, processed_data[0]);
 
     HAL_UART_Transmit( &huart2, ( uint8_t * )dataOut, strlen( dataOut ), 5000 );
 
@@ -706,9 +710,9 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     if ( acquire_data_enabled == 1 )
   {
     /* Perform all handlers */
-    // RTC_Handler();
+    RTC_Handler();
     Accelero_Sensor_Handler( LSM6DS0_X_0_handle );
-    Gyro_Sensor_Handler( LSM6DS0_G_0_handle );
+    // Gyro_Sensor_Handler( LSM6DS0_G_0_handle );
   }
 
 

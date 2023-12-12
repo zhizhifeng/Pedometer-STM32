@@ -52,9 +52,12 @@ void pedometer_update(AccVector acc, Acc *data, FilterAccBuffer *coord_data, flo
     data->acc_data.AccZ = acc.AccZ;
     // Update the gravity data
     filter_coord_buffer_update(&coord_data->lp_grav_data, data->acc_data);
-    data->grav_data.AccX = 0.01*single_step_filter(coord_data->lp_grav_data.x.unfiltered, coord_data->lp_grav_data.x.filtered, LOW_GRAV_COEF, FILTER_BUFFER_SIZE);
-    data->grav_data.AccY = 0.01*single_step_filter(coord_data->lp_grav_data.y.unfiltered, coord_data->lp_grav_data.y.filtered, LOW_GRAV_COEF, FILTER_BUFFER_SIZE);
-    data->grav_data.AccZ = 0.01*single_step_filter(coord_data->lp_grav_data.z.unfiltered, coord_data->lp_grav_data.z.filtered, LOW_GRAV_COEF, FILTER_BUFFER_SIZE);
+    // data->grav_data.AccX = 0.01*single_step_filter(coord_data->lp_grav_data.x.unfiltered, coord_data->lp_grav_data.x.filtered, LOW_GRAV_COEF, FILTER_BUFFER_SIZE);
+    // data->grav_data.AccY = 0.01*single_step_filter(coord_data->lp_grav_data.y.unfiltered, coord_data->lp_grav_data.y.filtered, LOW_GRAV_COEF, FILTER_BUFFER_SIZE);
+    // data->grav_data.AccZ = 0.01*single_step_filter(coord_data->lp_grav_data.z.unfiltered, coord_data->lp_grav_data.z.filtered, LOW_GRAV_COEF, FILTER_BUFFER_SIZE);
+    data->grav_data.AccX = single_step_averaging_filter(coord_data->lp_grav_data.x.unfiltered, coord_data->lp_grav_data.x.filtered, FILTER_BUFFER_SIZE);
+    data->grav_data.AccY = single_step_averaging_filter(coord_data->lp_grav_data.y.unfiltered, coord_data->lp_grav_data.y.filtered, FILTER_BUFFER_SIZE);
+    data->grav_data.AccZ = single_step_averaging_filter(coord_data->lp_grav_data.z.unfiltered, coord_data->lp_grav_data.z.filtered, FILTER_BUFFER_SIZE);
     // Update the user data
     data->user_data.AccX = data->acc_data.AccX - data->grav_data.AccX;
     data->user_data.AccY = data->acc_data.AccY - data->grav_data.AccY;
@@ -64,9 +67,12 @@ void pedometer_update(AccVector acc, Acc *data, FilterAccBuffer *coord_data, flo
                                                    data->user_data.AccY * data->grav_data.AccY +
                                                    data->user_data.AccZ * data->grav_data.AccZ);
     // Low pass filter the dot product  
-    filter_buffer_update(&coord_data->hp_dot_data, 
-                        single_step_filter(coord_data->lp_dot_data.unfiltered, coord_data->lp_dot_data.filtered, LP_USER_COEF, FILTER_BUFFER_SIZE));  
-    processed_data[0]=single_step_filter(coord_data->lp_dot_data.unfiltered, coord_data->lp_dot_data.filtered, LP_USER_COEF, FILTER_BUFFER_SIZE);
+    // filter_buffer_update(&coord_data->hp_dot_data, 
+    //                     single_step_filter(coord_data->lp_dot_data.unfiltered, coord_data->lp_dot_data.filtered, LP_USER_COEF, FILTER_BUFFER_SIZE));  
+    // processed_data[0]=single_step_filter(coord_data->lp_dot_data.unfiltered, coord_data->lp_dot_data.filtered, LP_USER_COEF, FILTER_BUFFER_SIZE);
+    // filter_buffer_update(&coord_data->hp_dot_data, 
+    //                     single_step_averaging_filter(coord_data->lp_dot_data.unfiltered, coord_data->lp_dot_data.filtered, FILTER_BUFFER_SIZE));  
+    processed_data[0]=single_step_averaging_filter(coord_data->lp_dot_data.unfiltered, coord_data->lp_dot_data.filtered, FILTER_BUFFER_SIZE);
     // High pass filter the dot product
     //processed_data[0] = single_step_filter(coord_data->hp_dot_data.unfiltered, coord_data->hp_dot_data.filtered, HP_USER_COEF, FILTER_BUFFER_SIZE);
     // Detect step
@@ -100,6 +106,18 @@ float single_step_filter(float* data, float* filtered_data, FilterCoefficients c
                           data[i-2]          * coefficients.beta[2] -
                           filtered_data[i-1] * coefficients.alpha[1] -
                           filtered_data[i-2] * coefficients.alpha[2]);
+    return filtered_data[i];
+}
+
+
+float single_step_averaging_filter(float* data, float* filtered_data, uint8_t data_length) {
+    uint8_t i = 0;
+    // Shift the data
+    for (i = 0; i < data_length - 1; i++){
+        filtered_data[i] = filtered_data[i+1];
+    }
+    // Filter the data
+    filtered_data[i] = filtered_data[i-1] - data[1]/(data_length - 1) + data[i]/(data_length - 1);
     return filtered_data[i];
 }
 
