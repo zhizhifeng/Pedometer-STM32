@@ -1,8 +1,8 @@
 #include <stdint.h>
 #define FILTER_BUFFER_SIZE 3
 #define BUFFER_SIZE 5
-#define THRESHOLD 0.1
-
+#define THRESHOLD1 0.15
+#define THRESHOLD2 0.08
 typedef struct
 {
     float AccX;
@@ -43,4 +43,4 @@ void pedometer_update(AccVector acc, Acc *data, FilterAccBuffer *coord_data, flo
 void filter_coord_buffer_update(FilterCoordBuffer *buffer, AccVector data);
 void filter_buffer_update(FilterBuffer *buffer, float data);
 float single_step_filter(float *unfiltered, float *filtered, FilterCoefficients coef, uint8_t buffer_size);
-void measure_steps(int *steps, float *data);
+void measure_steps(int *steps, float *data,float *max,float *min, int *flag);
