@@ -307,7 +307,7 @@ static void Accelero_Sensor_Handler( void *handle )
     data_in.AccX = (float)acceleration.AXIS_X / 1000.0f;
     data_in.AccY = (float)acceleration.AXIS_Y / 1000.0f;
     data_in.AccZ = (float)acceleration.AXIS_Z / 1000.0f;
-    processed_data[2] = processed_data[1]; 
+    processed_data[2] = processed_data[1];  
     processed_data[1] = processed_data[0];   
     pedometer_update(data_in, &data, &coord_data, processed_data);
     measure_steps(&steps,processed_data,&max,&min);
@@ -321,8 +321,8 @@ static void Accelero_Sensor_Handler( void *handle )
 
     // HAL_UART_Transmit( &UartHandle, ( uint8_t * )dataOut, strlen( dataOut ), 5000 );
 		
-    snprintf( dataOut, MAX_BUF_SIZE, "%d\t%5f\t%5f\t%5f\t%5f\t%5f\t%d\t%5f\t%5f\r\n", 4, coord_data.lp_dot_data.unfiltered[0], coord_data.lp_dot_data.filtered[0],processed_data[0],processed_data[1],processed_data[2],steps,max,min );
-
+    //snprintf( dataOut, MAX_BUF_SIZE, "%d\t%5f\t%5f\t%5f\t%5f\t%5f\t%d\t%5f\t%5f\r\n", 4, coord_data.lp_dot_data.unfiltered[0], coord_data.lp_dot_data.filtered[0],processed_data[0],processed_data[1],processed_data[2],steps,max,min );
+    snprintf( dataOut, MAX_BUF_SIZE, "%d\t%5f\t%5f\t%5f\t%5f\t%5f\r\n", steps,data_in.AccZ,data.grav_data.AccZ,data.user_data.AccZ,coord_data.lp_dot_data.unfiltered[0],coord_data.lp_dot_data.filtered[0]);
     HAL_UART_Transmit( &UartHandle, ( uint8_t * )dataOut, strlen( dataOut ), 5000 );
 		// snprintf( dataOut, MAX_BUF_SIZE, "%d\t%5f\t%5f\t%5f\r\n", 5, data.user_data.AccX,
     //          data.user_data.AccY, data.user_data.AccZ );

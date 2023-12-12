@@ -1,7 +1,7 @@
 #include <stdint.h>
 #define FILTER_BUFFER_SIZE 3
 #define BUFFER_SIZE 5
-#define THRESHOLD 0.15
+#define THRESHOLD 0.09
 
 typedef struct
 {
