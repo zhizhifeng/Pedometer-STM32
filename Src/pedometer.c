@@ -37,10 +37,10 @@ void pedometer_update(AccVector acc, Acc *data, FilterAccBuffer *coord_data, flo
         .beta = {0.000241359049041981, 0.000482718098083961, 0.000241359049041981}};
     const FilterCoefficients LP_USER_COEF = {
         // fc=1.5
-        //  .alpha = {1, -1.348967745252795, 0.513981894219676},
+        //  .alpha = {1, -1.561018075800718, 0.641351538057563},
         //  .beta = {0.041253537241720,0.082507074483441, 0.041253537241720}}
-        .alpha = {1, -1.348967745252795, 0.513981894219676},
-        .beta = {0.041253537241720,0.082507074483441, 0.041253537241720}};
+        .alpha = {1, -1.561018075800718, 0.641351538057563},
+        .beta = {0.020083365564211, 0.040166731128422, 0.020083365564211}};
     const FilterCoefficients HP_USER_COEF = {
         .alpha = {1, -1.911197067426073, 0.914975834801434},
         .beta = {0.956543225556877, -1.913086451113754, 0.956543225556877}};
@@ -50,9 +50,9 @@ void pedometer_update(AccVector acc, Acc *data, FilterAccBuffer *coord_data, flo
     data->acc_data.AccZ = acc.AccZ;
     // Update the gravity data
     filter_coord_buffer_update(&coord_data->lp_grav_data, data->acc_data);
-     data->user_data.AccX=single_step_filter(coord_data->lp_grav_data.x.unfiltered, coord_data->lp_grav_data.x.filtered, HP_USER_COEF, FILTER_BUFFER_SIZE);
-     data->user_data.AccY=single_step_filter(coord_data->lp_grav_data.y.unfiltered, coord_data->lp_grav_data.y.filtered, HP_USER_COEF, FILTER_BUFFER_SIZE);
-     data->user_data.AccZ=single_step_filter(coord_data->lp_grav_data.z.unfiltered, coord_data->lp_grav_data.z.filtered, HP_USER_COEF, FILTER_BUFFER_SIZE);
+    data->user_data.AccX = single_step_filter(coord_data->lp_grav_data.x.unfiltered, coord_data->lp_grav_data.x.filtered, HP_USER_COEF, FILTER_BUFFER_SIZE);
+    data->user_data.AccY = single_step_filter(coord_data->lp_grav_data.y.unfiltered, coord_data->lp_grav_data.y.filtered, HP_USER_COEF, FILTER_BUFFER_SIZE);
+    data->user_data.AccZ = single_step_filter(coord_data->lp_grav_data.z.unfiltered, coord_data->lp_grav_data.z.filtered, HP_USER_COEF, FILTER_BUFFER_SIZE);
     // data->grav_data.AccX = 0.01 * single_step_filter(coord_data->lp_grav_data.x.unfiltered, coord_data->lp_grav_data.x.filtered, LOW_GRAV_COEF, FILTER_BUFFER_SIZE);
     // data->grav_data.AccY = 0.01 * single_step_filter(coord_data->lp_grav_data.y.unfiltered, coord_data->lp_grav_data.y.filtered, LOW_GRAV_COEF, FILTER_BUFFER_SIZE);
     // data->grav_data.AccZ = 0.01 * single_step_filter(coord_data->lp_grav_data.z.unfiltered, coord_data->lp_grav_data.z.filtered, LOW_GRAV_COEF, FILTER_BUFFER_SIZE);
@@ -64,14 +64,14 @@ void pedometer_update(AccVector acc, Acc *data, FilterAccBuffer *coord_data, flo
     // data->user_data.AccY = data->acc_data.AccY - data->grav_data.AccY;
     // data->user_data.AccZ = data->acc_data.AccZ - data->grav_data.AccZ;
     // Dot product of user data and gravity data
-   filter_buffer_update(&coord_data->lp_dot_data, data->user_data.AccX * data->grav_data.AccX +
+    filter_buffer_update(&coord_data->lp_dot_data, data->user_data.AccX * data->grav_data.AccX +
                                                        data->user_data.AccY * data->grav_data.AccY +
                                                        data->user_data.AccZ * data->grav_data.AccZ);
-                                                       
+
     // Low pass filter the dot product
-     filter_buffer_update(&coord_data->hp_dot_data,
+    filter_buffer_update(&coord_data->hp_dot_data,
                          single_step_filter(coord_data->lp_dot_data.unfiltered, coord_data->lp_dot_data.filtered, LP_USER_COEF, FILTER_BUFFER_SIZE));
-     processed_data[0] = single_step_filter(coord_data->lp_dot_data.unfiltered, coord_data->lp_dot_data.filtered, LP_USER_COEF, FILTER_BUFFER_SIZE);
+    processed_data[0] = single_step_filter(coord_data->lp_dot_data.unfiltered, coord_data->lp_dot_data.filtered, LP_USER_COEF, FILTER_BUFFER_SIZE);
     // High pass filter the dot product
     // processed_data[0] = single_step_filter(coord_data->hp_dot_data.unfiltered, coord_data->hp_dot_data.filtered, HP_USER_COEF, FILTER_BUFFER_SIZE);
     // Detect step
@@ -112,8 +112,9 @@ float single_step_filter(float *data, float *filtered_data, FilterCoefficients c
     return filtered_data[i];
 }
 
-void measure_steps(int *steps, float *data, float *max, float *min)
+void measure_steps(int *steps, float *data, float *max, float *min, int *flag)
 {
+    float difference = 0;
     int count_steps = 1;
     // if (data[1] >= THRESHOLD && data[0] < THRESHOLD)
     // {
@@ -124,20 +125,47 @@ void measure_steps(int *steps, float *data, float *max, float *min)
     {
         if (data[2] < data[1] && data[0] < data[1])
         {
-            *max = data[1];
-            if (*max != 0 && *min != 0 )
-        {
-              float difference = *max - *min;
-        if(difference > THRESHOLD)
-        {
-            *steps += 1;           
-        }
-        }
-    }
-        else if (data[2] > data[1] && data[0] > data[1])
-            *min = data[1];
-        
+            if (data[1] - *min > THRESHOLD2)
+            {
+                *max = data[1];
+                flag[1] = 0;
+                difference = *max - *min;
+                if (*max != 0 && *min != 0 && flag[0] == 0 && difference > THRESHOLD1)
+                {
+                    if (flag[3])
+                    {
+                        flag[3] = 0;
+                    } else
+                    {
+                        *steps += 1;
+                        flag[0] = 1;
+                        flag[2] = 1;
+                    }
 
+                }
+            }
+        }
+        else if (data[2] > data[1] && data[0] > data[1])
+            if (*max - data[1] > THRESHOLD2)
+            {
+                *min = data[1];
+                flag[0] = 0;
+                difference = *max - *min;
+
+                if (*max != 0 && *min != 0 && flag[1] == 0 && difference > THRESHOLD1)
+                {
+                    if (flag[2])
+                    {
+                        flag[2] = 0;
+                    }
+                    else
+                    {
+                        *steps += 1;
+                        flag[1] = 1;
+                        flag[3] = 1;
+                    }
+                }
+            }
     }
 }
 // float filter(float* data, FilterCoefficients coefficients, uint8_t data_length) {

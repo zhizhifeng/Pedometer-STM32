@@ -99,7 +99,7 @@ FilterAccBuffer coord_data;
 float processed_data[BUFFER_SIZE];
 int steps=0;
 float max,min;
-
+int flag[4];
 /* Private function prototypes -----------------------------------------------*/
 
 static void RTC_Config( void );
@@ -310,7 +310,7 @@ static void Accelero_Sensor_Handler( void *handle )
     processed_data[2] = processed_data[1];  
     processed_data[1] = processed_data[0];   
     pedometer_update(data_in, &data, &coord_data, processed_data);
-    measure_steps(&steps,processed_data,&max,&min);
+    measure_steps(&steps,processed_data,&max,&min, flag);
     // snprintf( dataOut, MAX_BUF_SIZE, "%d\t%5f\t%5f\t%5f\t",(int)1, data_in.AccX,
     //          data_in.AccY, data_in.AccZ );
 
@@ -322,7 +322,7 @@ static void Accelero_Sensor_Handler( void *handle )
     // HAL_UART_Transmit( &UartHandle, ( uint8_t * )dataOut, strlen( dataOut ), 5000 );
 		
     //snprintf( dataOut, MAX_BUF_SIZE, "%d\t%5f\t%5f\t%5f\t%5f\t%5f\t%d\t%5f\t%5f\r\n", 4, coord_data.lp_dot_data.unfiltered[0], coord_data.lp_dot_data.filtered[0],processed_data[0],processed_data[1],processed_data[2],steps,max,min );
-    snprintf( dataOut, MAX_BUF_SIZE, "%d\t%5f\t%5f\t%5f\t%5f\t%5f\r\n", steps,data_in.AccZ,data.grav_data.AccZ,data.user_data.AccZ,coord_data.lp_dot_data.unfiltered[0],coord_data.lp_dot_data.filtered[0]);
+    snprintf( dataOut, MAX_BUF_SIZE, "%d\t%5f\t%5f\t%5f\t%5f\t%5f\r\n", steps,data.grav_data.AccX,data.grav_data.AccY,data.grav_data.AccZ,coord_data.lp_dot_data.unfiltered[0],coord_data.lp_dot_data.filtered[0]);
     HAL_UART_Transmit( &UartHandle, ( uint8_t * )dataOut, strlen( dataOut ), 5000 );
 		// snprintf( dataOut, MAX_BUF_SIZE, "%d\t%5f\t%5f\t%5f\r\n", 5, data.user_data.AccX,
     //          data.user_data.AccY, data.user_data.AccZ );
