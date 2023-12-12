@@ -32,15 +32,17 @@
 void pedometer_update(AccVector acc, Acc *data, FilterAccBuffer *coord_data, float *processed_data)
 {
 
-    const FilterCoefficients LOW_GRAV_COEF = {
-        .alpha = {1, -1.99555712434579, 0.995566972065975},
-        .beta = {0.000241359049041981, 0.000482718098083961, 0.000241359049041981}};
+    // const FilterCoefficients LOW_GRAV_COEF = {
+    //     .alpha = {1, -1.99555712434579, 0.995566972065975},
+    //     .beta = {0.000241359049041981, 0.000482718098083961, 0.000241359049041981}};
     const FilterCoefficients LP_USER_COEF = {
-        // fc=1.5
+        // fc=1
         //  .alpha = {1, -1.561018075800718, 0.641351538057563},
         //  .beta = {0.041253537241720,0.082507074483441, 0.041253537241720}}
         .alpha = {1, -1.561018075800718, 0.641351538057563},
         .beta = {0.020083365564211, 0.040166731128422, 0.020083365564211}};
+       
+    //HP fc=0.2
     const FilterCoefficients HP_USER_COEF = {
         .alpha = {1, -1.911197067426073, 0.914975834801434},
         .beta = {0.956543225556877, -1.913086451113754, 0.956543225556877}};
