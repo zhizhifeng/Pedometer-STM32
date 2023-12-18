@@ -77,6 +77,9 @@ AccVector acc;
 Acc data;
 FilterAccBuffer coord_data;
 StepDetectHandler hdetect;
+int step_temp[2];
+float temperature_temp[2];
+float humidity_temp[2];
 
 
 /* USER CODE END PV */
@@ -551,9 +554,7 @@ static void Accelero_Sensor_Handler(void *handle)
   SensorAxes_t acceleration;
   uint8_t status;
   displayFloatToInt_t out_value;
-
-  // For pedometer
-  AccVector data_in;
+  AccVector data_in;  // For pedometer
 
   BSP_ACCELERO_Get_Instance(handle, &id);
 
@@ -573,14 +574,8 @@ static void Accelero_Sensor_Handler(void *handle)
     data_in.AccY = (float)acceleration.AXIS_Y / 1000.0f;
     data_in.AccZ = (float)acceleration.AXIS_Z / 1000.0f;
     pedometer_update(data_in, &data, &coord_data, &hdetect);
+    step_temp[0] = hdetect.step;
 
-    snprintf(dataOut, MAX_BUF_SIZE, "%d %5f %5f %5f %5f %5f ",
-             hdetect.step, data.grav_data.AccX, data.grav_data.AccY, data.grav_data.AccZ, coord_data.lp_dot_data.unfiltered[0], coord_data.lp_dot_data.filtered[0]);
-
-    HAL_UART_Transmit(&huart2, (uint8_t *)dataOut, strlen(dataOut), 5000);
-    if(hdetect.step != hdetect.prev_step){
-      Display_Step_Update(hdetect.step);
-    }
     // snprintf( dataOut, MAX_BUF_SIZE, "\r\nACC_X[%d]: %d, ACC_Y[%d]: %d, ACC_Z[%d]: %d\r\n", (int)id, (int)acceleration.AXIS_X, (int)id,
     //          (int)acceleration.AXIS_Y, (int)id, (int)acceleration.AXIS_Z );
 
@@ -651,10 +646,8 @@ static void Humidity_Sensor_Handler( void *handle )
       humidity = 0.0f;
     }
 
-    floatToInt( humidity, &out_value, 2 );
-    snprintf( dataOut, MAX_BUF_SIZE, "%d.%02d%% ", (int)out_value.out_int, (int)out_value.out_dec );
-    HAL_UART_Transmit( &huart2, ( uint8_t * )dataOut, strlen( dataOut ), 5000 );
-    Display_Humidity_Update(humidity);
+    humidity_temp[0] = humidity;
+    // floatToInt( humidity, &out_value, 2 );
     // snprintf( dataOut, MAX_BUF_SIZE, "\r\nHUM[%d]: %d.%02d\r\n", (int)id, (int)out_value.out_int, (int)out_value.out_dec );
     // HAL_UART_Transmit( &huart2, ( uint8_t * )dataOut, strlen( dataOut ), 5000 );
 
@@ -711,10 +704,8 @@ static void Temperature_Sensor_Handler( void *handle )
       temperature = 0.0f;
     }
 
-    floatToInt( temperature, &out_value, 2 );
-    snprintf( dataOut, MAX_BUF_SIZE, "%c%d.%02d\r\n", ((out_value.sign) ? '-' : '+'), (int)out_value.out_int, (int)out_value.out_dec );
-    HAL_UART_Transmit( &huart2, ( uint8_t * )dataOut, strlen( dataOut ), 5000 );
-    Display_Temperature_Update(temperature);
+    temperature_temp[0] = temperature;
+    // floatToInt( temperature, &out_value, 2 );
     // snprintf( dataOut, MAX_BUF_SIZE, "\r\nTEMP[%d]: %c%d.%02d\r\n", (int)id, ((out_value.sign) ? '-' : '+'), (int)out_value.out_int, (int)out_value.out_dec );
     // HAL_UART_Transmit( &huart2, ( uint8_t * )dataOut, strlen( dataOut ), 5000 );
 
@@ -816,10 +807,26 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
   if(htim->Instance == TIM2){
     if(acquire_data_enabled == 1){
-      RTC_Handler();
       Accelero_Sensor_Handler(LSM6DS0_X_0_handle);
       Humidity_Sensor_Handler( HTS221_H_0_handle );
       Temperature_Sensor_Handler( HTS221_T_0_handle );
+      RTC_Handler(); //print time
+      snprintf(dataOut, MAX_BUF_SIZE, "%d %.3f %.3f %.3f %.3f %.3f %.2f %.2f\r\n",
+        hdetect.step, data.grav_data.AccX, data.grav_data.AccY, data.grav_data.AccZ,
+        coord_data.lp_dot_data.unfiltered[0], coord_data.lp_dot_data.filtered[0], temperature_temp[0], humidity_temp[0]);
+      HAL_UART_Transmit(&huart2, (uint8_t *)dataOut, strlen(dataOut), 5000);
+      if(step_temp[0] != step_temp[1]){
+        Display_Step_Update(step_temp[0]);
+        step_temp[1] = step_temp[0];
+      }
+      if(temperature_temp[0] != temperature_temp[1]){
+        Display_Temperature_Update(temperature_temp[0]);
+        temperature_temp[1] = temperature_temp[0];
+      }
+      if(humidity_temp[0] != humidity_temp[1]){
+        Display_Humidity_Update(humidity_temp[0]);
+        humidity_temp[1] = humidity_temp[0];
+      }
     }
   }
 

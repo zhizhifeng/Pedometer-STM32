@@ -42,7 +42,6 @@ typedef struct {
 typedef struct{
     float processed_data[BUFFER_SIZE];
     int step;
-    int prev_step;
     float max;
     float min;
     int flag[4];

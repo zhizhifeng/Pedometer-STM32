@@ -103,7 +103,6 @@ static void measure_steps(StepDetectHandler *hdetect)
             }
             else
             { // update the step count
-                hdetect->prev_step = hdetect->step;
                 hdetect->step += 1;
                 // set the flag that the last slope was a rising slope so that we don't count the same step twice
                 hdetect->flag[0] = 1;
@@ -127,7 +126,6 @@ static void measure_steps(StepDetectHandler *hdetect)
             }
             else
             {
-                hdetect->prev_step = hdetect->step;
                 hdetect->step += 1;
                 hdetect->flag[1] = 1;
                 hdetect->flag[3] = 1;
