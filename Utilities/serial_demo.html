@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Serial Logger and Plotter</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+  <canvas id="myChart" height="100"></canvas>
+  <div>
+    <button id="btnConnect">Connect</button>
+    <span style="padding: 1%">
+    </span><button id="btnStop">Stop</button>
+    <span style="padding: 1%">
+    </span><button id="btnSave">Save</button>
+    <span style="padding: 1%">
+    </span><button id="btnClear">Clear</button>
+  </div>
+  <p id="step" style="margin: 10px">Steps: Not Connected</p>
+  <div style="margin: 10px">Serial Port Monitor:</div>
+  <div id="received-data-list" style="border: groove;
+    margin: 10px;
+    height: 200px;
+    overflow-y: scroll;
+    font-family: Consolas, monospace;">
+  </div>
+
+  <script>
+    /* find the chart and list tag */
+    var ctx = document.getElementById("myChart").getContext("2d");
+    var chart = new Chart(ctx, {
+      // The type of chart we want to create
+      type: "line",
+      // The data for our dataset
+      data: {
+        labels: [],
+        datasets: [
+          {
+            label: "Gx",
+            borderColor: "red",
+            data: [],
+            fill: false,
+          },
+          {
+            label: "Gy",
+            borderColor: "blue",
+            data: [],
+            fill: false,
+          },
+          {
+            label: "Gz",
+            borderColor: "green",
+            data: [],
+            fill: false,
+          },
+          {
+            label: "U",
+            borderColor: "yellow",
+            data: [],
+            fill: false,
+          },
+          {
+            label: "Uf",
+            borderColor: "purple",
+            data: [],
+            fill: false,
+          },
+        ],
+      },
+      options: {
+        animation: false,
+      },
+    });
+
+    const dataList = document.getElementById("received-data-list");
+    const stepDisplay = document.getElementById("step");
+
+    /* btnConnect listener */
+    let reader;
+    // all data parsed are stored in a list ordered by received time of the data frame.
+    let receivedframe = [];
+    let readableStreamClosed;
+    let port;
+    document
+      .getElementById("btnConnect")
+      .addEventListener("click", async () => {
+        port = await navigator.serial.requestPort();
+        await port.open({ baudRate: 115200 }); // set baud rate
+
+        class LineBreakTransformer {
+          constructor() {
+            // A container for holding stream data until a new line.
+            this.chunks = "";
+          }
+
+          transform(chunk, controller) {
+            // Append new chunks to existing chunks.
+            this.chunks += chunk;
+            // For each line breaks in chunks, send the parsed lines out.
+            const lines = this.chunks.split("\r\n");
+            this.chunks = lines.pop();
+            lines.forEach((line) => controller.enqueue(line));
+          }
+
+          flush(controller) {
+            // When the stream is closed, flush any remaining chunks out.
+            controller.enqueue(this.chunks);
+          }
+        }
+
+        const textDecoder = new TextDecoderStream();
+        readableStreamClosed = port.readable.pipeTo(textDecoder.writable);
+        reader = textDecoder.readable
+          .pipeThrough(new TransformStream(new LineBreakTransformer()))
+          .getReader();
+
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) {
+            // Allow the serial port to be closed later.
+            reader.releaseLock();
+            break;
+          }
+          if (value) {
+            dealWithData(value);
+          }
+        }
+      });
+
+    /* Deal with the data */
+    function dealWithData(value) {
+      // parse the frame
+      let spvalue = value.split(/\s+/);
+      let timestr = spvalue[1];
+      let step = spvalue[2] / 1;
+      let Gx = spvalue[3] / 1;
+      let Gy = spvalue[4] / 1;
+      let Gz = spvalue[5] / 1;
+      let U = spvalue[6] / 1;
+      let Uf = spvalue[7] / 1;
+
+      let frame = {
+        timestr,
+        Gx,
+        Gy,
+        Gz,
+        U,
+        Uf,
+      };
+
+      // record the frame
+      receivedframe.push(frame);
+
+      // print data on the page
+      dataList.innerHTML += `<p>${value}</p>`;
+      stepDisplay.innerHTML = `Steps: ${step}`;
+
+      // update the chart
+      if (spvalue[0] === "TimeStamp:") {
+        if (chart.data.labels.length >= 100) {
+          chart.data.labels.shift();
+          chart.data.datasets.forEach((dataset) => {
+            dataset.data.shift();
+          });
+        }
+        chart.data.labels.push(timestr);
+        chart.data.datasets.forEach((dataset) => {
+          dataset.data.push(frame[dataset.label]);
+        });
+        chart.update('none');
+      }
+    }
+
+    /* btnStop listener */
+    document.getElementById("btnStop").addEventListener("click", async () => {
+      const textEncoder = new TextEncoderStream();
+
+      reader.cancel();
+      await readableStreamClosed.catch(() => { /* Ignore the error */ });
+
+      await port.close();
+      console.log("port closed");
+    });
+
+    /* btnSave listener */
+    document.getElementById("btnSave").addEventListener("click", async () => {
+      // create a new handle
+      const jsonHandle = await window.showSaveFilePicker();
+      // create a FileSystemWritableFileStream to write to
+      const writableStream = await jsonHandle.createWritable();
+      // write our file
+      const aBlob = new Blob([JSON.stringify(receivedframe)], {
+        type: "text/plain",
+      });
+      await writableStream.write(aBlob);
+      receivedframe = [];
+      // close the file and write the contents to disk.
+      await writableStream.close();
+    });
+
+    /* btnClear listener */
+    document.getElementById("btnClear").addEventListener("click", () => {
+      dataList.innerHTML = "";
+      chart.data.labels = [];
+      chart.data.datasets.forEach((dataset) => {
+        dataset.data = [];
+      });
+      chart.update();
+    });
+  </script>
+</body>
+
+</html>
