@@ -1,8 +1,10 @@
+#ifndef PEDOMETER_H
+#define PEDOMETER_H
 #include <stdint.h>
-#define FILTER_BUFFER_SIZE 20
-#define BUFFER_SIZE 5
-#define THRESHOLD 0.1
-
+#define FILTER_BUFFER_SIZE 3
+#define BUFFER_SIZE 3
+#define THRESHOLD1 0.15
+#define THRESHOLD2 0.08
 typedef struct
 {
     float AccX;
@@ -28,9 +30,8 @@ typedef struct{
 } FilterCoordBuffer;
 
 typedef struct{
-    FilterCoordBuffer lp_grav_data;
+    FilterCoordBuffer hp_user_data;
     FilterBuffer lp_dot_data;
-    FilterBuffer hp_dot_data;
 } FilterAccBuffer;
 
 typedef struct {
@@ -38,10 +39,16 @@ typedef struct {
     float beta[3];
 } FilterCoefficients;
 
-// void pedometer_init(Acc *data, AccBuffer *coord_data);
-void pedometer_update(AccVector acc, Acc *data, FilterAccBuffer *coord_data, float *processed_data);
-void filter_coord_buffer_update(FilterCoordBuffer *buffer, AccVector data);
-void filter_buffer_update(FilterBuffer *buffer, float data);
-float single_step_filter(float *unfiltered, float *filtered, FilterCoefficients coef, uint8_t buffer_size);
-float single_step_averaging_filter(float* data, float* filtered_data, uint8_t data_length);
-void measure_steps(int *steps, float *data);
+typedef struct{
+    float processed_data[BUFFER_SIZE];
+    int step;
+    int prev_step;
+    float max;
+    float min;
+    int flag[4];
+} StepDetectHandler;
+
+// export functions
+void pedometer_update(AccVector acc, Acc *data, FilterAccBuffer *coord_data, StepDetectHandler *hdetect);
+
+#endif
