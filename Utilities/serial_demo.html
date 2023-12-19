@@ -37,6 +37,24 @@
       data: {
         labels: [],
         datasets: [
+        {
+            label: "Ax",
+            borderColor: "gray",
+            data: [],
+            fill: false,
+          },
+          {
+            label: "Ay",
+            borderColor: "orange",
+            data: [],
+            fill: false,
+          },
+          {
+            label: "Az",
+            borderColor: "brown",
+            data: [],
+            fill: false,
+          },
           {
             label: "Gx",
             borderColor: "red",
@@ -135,14 +153,20 @@
       let spvalue = value.split(/\s+/);
       let timestr = spvalue[1];
       let step = spvalue[2] / 1;
-      let Gx = spvalue[3] / 1;
-      let Gy = spvalue[4] / 1;
-      let Gz = spvalue[5] / 1;
-      let U = spvalue[6] / 1;
-      let Uf = spvalue[7] / 1;
+      let Ax = spvalue[3] / 1;
+      let Ay = spvalue[4] / 1;
+      let Az = spvalue[5] / 1;
+      let Gx = spvalue[6] / 1;
+      let Gy = spvalue[7] / 1;
+      let Gz = spvalue[8] / 1;
+      let U = spvalue[9] / 1;
+      let Uf = spvalue[10] / 1;
 
       let frame = {
         timestr,
+        Ax,
+        Ay,
+        Az,
         Gx,
         Gy,
         Gz,

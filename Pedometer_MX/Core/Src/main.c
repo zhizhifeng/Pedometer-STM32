@@ -821,9 +821,12 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
       Humidity_Sensor_Handler( HTS221_H_0_handle );
       Temperature_Sensor_Handler( HTS221_T_0_handle );
       RTC_Handler(); //print time
-      snprintf(dataOut, MAX_BUF_SIZE, "%d %.3f %.3f %.3f %.3f %.3f %.2f %.2f\r\n",
-        hdetect.step, data.grav_data.AccX, data.grav_data.AccY, data.grav_data.AccZ,
-        coord_data.lp_dot_data.unfiltered[0], coord_data.lp_dot_data.filtered[0], temperature_temp[0], humidity_temp[0]);
+      snprintf(dataOut, MAX_BUF_SIZE, "%d %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.2f %.2f\r\n",
+        hdetect.step,
+        data.acc_data.AccX, data.acc_data.AccY, data.acc_data.AccZ,
+        data.grav_data.AccX, data.grav_data.AccY, data.grav_data.AccZ,
+        coord_data.lp_dot_data.unfiltered[0], coord_data.lp_dot_data.filtered[0],
+        temperature_temp[0], humidity_temp[0]);
       HAL_UART_Transmit(&huart2, (uint8_t *)dataOut, strlen(dataOut), 5000);
       if(step_temp[0] != step_temp[1]){
         Display_Step_Update(step_temp[0]);
