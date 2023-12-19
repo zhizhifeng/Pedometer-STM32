@@ -3,8 +3,8 @@
 #include <stdint.h>
 #define FILTER_BUFFER_SIZE 3
 #define BUFFER_SIZE 3
-#define THRESHOLD1 0.15
-#define THRESHOLD2 0.08
+#define THRESHOLD1 0.08
+#define THRESHOLD2 0.05
 typedef struct
 {
     float AccX;
